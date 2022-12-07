@@ -28,7 +28,7 @@ def main():
     graph = node2vec.Node2Vec(nx_graph, p=1, q=1)
     graph.preprocess_edges()
     graph.preprocess_nodes()
-    walks = graph.simulate_walks(num_walks=300, walk_length=10)
+    walks = graph.simulate_walks(num_walks=600, walk_length=5)
     model = learn_embeddings(walks)
 
     nodes = [x for x in list(model.wv.key_to_index.keys())]
@@ -49,16 +49,39 @@ def main():
                  'afc_east': ['MIA', 'NYJ', 'NE', 'BUF'], 'afc_north': ['CIN', 'PIT', 'CLE', 'BAL'],
                  'afc_south': ['HOU', 'TEN', 'IND', 'JAX'], 'afc_west': ['LAC', 'KC', 'DEN', 'LV']}
 
-    count = 0
-    correct = 0
+    non_predicted_teams = []
+    true_positives = 0
+    true_negatives = 0
+    false_positives = 0
+    false_negatives = 0
     for key in divisions:
         for team in divisions[key]:
             most_similar = model.wv.most_similar(team)
-            for x in range(0, 3):
-                if most_similar[x][0] in divisions[key]:
-                    correct += 1
-                count += 1
-    print("Correct Top 3 Relations: " + str(correct) + "/" + str(count))
+            predicted_teams = []
+            non_predicted_teams = []
+            for sim in most_similar:
+                if sim[1] > .9:
+                    predicted_teams.append(sim[0])
+                else:
+                    non_predicted_teams.append(sim[0])
+            print(f"{team}, {predicted_teams}")
+            for predicted in predicted_teams:
+                if predicted in divisions[key]:
+                    true_positives += 1
+                else:
+                    false_positives += 1
+            for non_predicted in non_predicted_teams:
+                if non_predicted not in divisions[key]:
+                    true_negatives += 1
+                else:
+                    false_negatives += 1
+
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+    print(f"Precision: {precision}")
+    print(f"Recall: {recall}")
+    f1_score = (2 * recall * precision) / (recall + precision)
+    print(f"F1 Score: {f1_score}")
 
     for node in nodes:
         if node in divisions['nfc_east']:
