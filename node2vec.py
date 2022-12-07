@@ -71,32 +71,32 @@ class Node2Vec:
         self.alias_nodes = alias_nodes
 
 
+# math used by original node2vec
 def alias_setup(probs):
-    K = len(probs)
-    q = np.zeros(K)
-    J = np.zeros(K)
+    q = np.zeros(len(probs))
+    b = np.zeros(len(probs))
 
     smaller = []
     larger = []
-    for kk, prob in enumerate(probs):
-        q[kk] = K * prob
-        if q[kk] < 1:
-            smaller.append(kk)
+    for i, prob in enumerate(probs):
+        q[i] = len(probs) * prob
+        if q[i] < 1:
+            smaller.append(i)
         else:
-            larger.append(kk)
+            larger.append(i)
 
-    while len(smaller) > 0 and len(larger) > 0:
+    while smaller and larger:
         small = smaller.pop()
         large = larger.pop()
 
-        J[small] = large
+        b[small] = large
         q[large] = q[large] + q[small] - 1
         if q[large] < 1:
             smaller.append(large)
         else:
             larger.append(large)
 
-    return J, q
+    return b, q
 
 
 def alias_draw(j, q):
